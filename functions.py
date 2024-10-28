@@ -13,20 +13,24 @@ def lookup_team_id(name):
 # Function to get hitting stats
 def get_hitter_stats(player_id):
     player = mlb.player_stat_data(player_id, group='hitting')
+    fielding = mlb.player_stat_data(player_id, group='fielding')
+    name = player['first_name'] + ' ' + player['last_name']
     for key, value in player.items():
-        print(key, value)
         if key == 'stats':
-            print(calculate_player_value(value[0]['stats'], 'hitter'))
-    return player
+            mvs = calculate_player_value(value[0]['stats'], 'hitter')
+            games = value[0]['stats']['gamesPlayed']
+    for key, value in fielding.items():
+        if key == 'stats':
+            mvs += calculate_player_value(value[0]['stats'], 'fielder')
+    return name, mvs, games
 
 # Function to get pitching stats
 def get_pitcher_stats(player_id):
     player = mlb.player_stat_data(player_id, group='pitching')
     for key, value in player.items():
-        print(key, value)
         if key == 'stats':
-            calculate_player_value(value[0]['stats'], 'hitter')
-    return player
+            mvs = calculate_player_value(value[0]['stats'], 'fielding')
+    return mvs
 
 # Function to get team stats
 def get_team_stats(team_id):
@@ -53,31 +57,46 @@ def calculate_player_value(stats, player_type):
     - float: Calculated player value.
     """
     value = 0
-
     if player_type == 'hitter':
         # Hitters: each stat is weighted based on its typical impact on value
-        value += float(stats['homeRuns']) * 10    # Home Runs weight
-        value += float(stats['rbi']) * 3    # Runs Batted In weight
-        value += float(stats['stolenBases']) * 4     # Stolen Bases weight
-        value += float(stats['runs']) * 3   # Runs weight
-        value -= float(stats['strikeOuts']) * 2 # Strikeouts weight
+        value += float(stats['homeRuns']) * 9    # Home Runs weight
+        value += float(stats['stolenBases']) * 1.25     # Stolen Bases weight
+        value -= float(stats['strikeOuts']) * 1 # Strikeouts weight
+        value -= float(stats['groundOuts']) * 0.97 # Groundouts weight
+        value -= float(stats['airOuts']) * 0.9 # Groundouts weight
         value -= float(stats['caughtStealing']) * 2 # Caught Stealing weight
-        value += float(stats['walks']) * 2 # Walks weight
-        value += float(stats['hits']) * 2   # Hits weight
-        value -= float(stats['groundIntoDoublePlay']) * 5 # Ground Into Double Play weight
-        value += float(stats['doubles']) * 4 # Doubles weight
-        value += float(stats['triples']) * 7    # Triples weight
+        value += float(stats['baseOnBalls']) * 2 # Walks weight
+        value += (float(stats['hits']) - float(stats['doubles']) - float(stats['homeRuns']) - float(stats['triples'])) * 3   # Hits weight
+        value -= float(stats['groundIntoDoublePlay']) * 2 # Ground Into Double Play weight
+        value += float(stats['doubles']) * 4.5 # Doubles weight
+        value += float(stats['triples']) * 6.6   # Triples weight
         value += float(stats['hitByPitch']) * 2 # Hit By Pitch weight
+
+    elif player_type == 'fielder':
+        # Fielders: each stat is weighted based on its typical impact on value
+        value += float(stats['assists']) * 0.5
+        value += float(stats['putOuts']) * 0.1
+        value += float(stats['errors']) * -1.2
+
 
     elif player_type == 'pitcher':
         # Pitchers: each stat is weighted based on its typical impact on value
-        value += stats.get('W', 0) * 5      # Wins weight
-        value += stats.get('K', 0) * 2      # Strikeouts weight
-        value -= stats.get('ERA', 0) * 75   # Earned Run Average weight (lower is better)
-        value -= stats.get('WHIP', 0) * 50  # Walks + Hits per Inning Pitched (lower is better)
+        value += float(stats['strikeOuts']) * 2.5   # Strikeouts weight
+        value += float(stats['wins']) * 6   # Wins weight
+        value -= float(stats['losses']) * 4    # Losses weight
+        value -= float(stats['hits']) * 0.6     # Hits weight
+        value -= float(stats['homeRuns']) * 1.5     # Home Runs weight
+        value -= float(stats['baseOnBalls']) * 1.5      # Walks weight
+        value -= float(stats['earnedRuns']) * 2.5   # Earned Runs weight
+        value += float(stats['inningsPitched']) * 2.25  # Innings Pitched weight
+
 
     return value
 
-for player in mlb.roster(input('Enter team name:')):
-    get_hitter_stats(player[lookup_player_id(player['name'])])
-
+def value_finder():
+    name = input('Enter player name: ')
+    while name != 'exit':
+        fullname, mvs, games = get_hitter_stats(lookup_player_id(name))
+        print(f'{fullname}\'s value is {mvs:.2f}')
+        print(f'Per game value: {mvs/games:.2f}')
+        name = input('Enter player name: ')

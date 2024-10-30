@@ -16,23 +16,27 @@ def plot_player_value_comparison():
 
 def plot_team_values():
     team_id = f.lookup_team_id(input('Enter team: '))
+    print('Getting player values...', end = "", flush=True)
     roster = mlb.team_leader_data(team_id, "atBats", "2024", limit=100)
     values = []
     players = []
-    print(roster)
     for player in roster:
+        print('.', end = "", flush=True)
         stats = f.get_hitter_stats(f.lookup_player_id(player[1]))
         values.append(stats[1])
         players.append(stats[0])
         plt.bar(players, values)
+    print()
     plt.title('Team Value Comparison')
     plt.xlabel('Player')
     plt.ylabel('Value')
     plt.show()
 
 def plot_league_stats():
+    print('Getting each team values...', end = "", flush=True)
     for i in range(108, 122): # 108-121 are the team IDs for MLB teams
         roster = mlb.team_leader_data(i, "atBats", "2024", limit=8)
+        print('.', end = "", flush=True)
         values = []
         players = []
         for player in roster:
@@ -44,6 +48,7 @@ def plot_league_stats():
         roster = mlb.team_leader_data(i, "atBats", "2024", limit=8)
         values = []
         players = []
+        print('.', end = "", flush=True)
         for player in roster:
             stats = f.get_hitter_stats(f.lookup_player_id(player[1]))
             values.append(stats[1])
@@ -52,6 +57,7 @@ def plot_league_stats():
     roster = mlb.team_leader_data(158, "atBats", "2024", limit=8)
     values = []
     players = []
+    print('.', end = "", flush=True)
     for player in roster:
         stats = f.get_hitter_stats(f.lookup_player_id(player[1]))
         values.append(stats[1])
@@ -62,37 +68,15 @@ def plot_league_stats():
     plt.ylabel('Value')
     plt.show()
 
-
-def plot_team_total_stats():
-    values = []
-    teams = []
-    for i in range(108, 122): # 108-121 are the team IDs for MLB teams
-        total = 0
-        roster = mlb.team_leader_data(i, "atBats", "2024", limit=8)
-        for player in roster:
-            stats = f.get_hitter_stats(f.lookup_player_id(player[1]))
-            total += stats[1]
-        teams.append(mlb.lookup_team(i))
-        values.append(total)
-    '''for i in range(133, 148): # 108-121 are the team IDs for MLB teams
-        total = 0
-        roster = mlb.team_leader_data(i, "atBats", "2024", limit=8)
-        for player in roster:
-            stats = f.get_hitter_stats(f.lookup_player_id(player[1]))
-            total += stats[1]
-        teams.append(mlb.lookup_team(i)[1])
-        values.append(total)
-    total = 0
-    roster = mlb.team_leader_data(i, "atBats", "2024", limit=8)
-    for player in roster:
-        stats = f.get_hitter_stats(f.lookup_player_id(player[1]))
-        total += stats[1]
-    teams.append(mlb.lookup_team(i)['name'])
-    values.append(total)'''
-    plt.bar(teams, values)
-    plt.title('Team Value Comparison')
-    plt.xlabel('Player')
-    plt.ylabel('Value')
-    plt.show()
-plot_team_total_stats()
-
+if __name__ == '__main__':
+    choice = input('Enter 1 to compare player values, 2 to compare team values, or 3 to compare league stats: ')
+    while choice > '0' and choice < '4':
+        if choice == '1':
+            plot_player_value_comparison()
+        elif choice == '2':
+            plot_team_values()
+        elif choice == '3':
+            plot_league_stats()
+        else:
+            print('Invalid choice')
+        choice = input('Enter 1 to compare player values, 2 to compare team values, or 3 to compare league stats: ')
